@@ -138,4 +138,14 @@ public class ResearchProjectDao {
       throw new ProjectNotFoundException("Research Project is not found in our DB:" + name);
     }
   }
+
+  @Transactional
+  @Retryable(
+          value = {DataAccessException.class},
+          maxAttempts = 3,
+          backoff = @Backoff(delay = 5000))
+  public void delete(String name) {
+    Optional<ResearchProjectEntity> researchProjectEntityOptional = findByName(name);
+    researchProjectEntityOptional.ifPresent(researchProjectRepository::delete);
+  }
 }

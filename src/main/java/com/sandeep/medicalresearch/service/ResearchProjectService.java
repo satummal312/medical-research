@@ -91,5 +91,6 @@ public class ResearchProjectService {
   public void deleteProject(String name) {
 
     researchProjectKafkaDao.sendDeleteRequest(ProjectDeleteKafkaMessageDto.builder().name(name).build());
+    researchProjectDao.delete(name);
   }
 }
