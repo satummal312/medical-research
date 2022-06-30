@@ -55,21 +55,20 @@ public class ResearchProjectDao {
     Set<ResearchScientistEntity> researchScientistEntitySet =
         researchScientistDao.saveAllScientists(researchProjectDto.getScientist_list());
 
-    Set<ProjectDocEntity> projectDocEntities = null;
-
-    if (null != project_files) {
-      projectDocEntities = projectDocDao.saveAllDocs(project_files);
-    }
-
     ResearchProjectEntity researchProjectEntity =
         ResearchProjectEntity.builder()
             .name(researchProjectDto.getName())
             .funding_amount(researchProjectDto.getFunding_amount())
-            .docsEntityList(projectDocEntities)
             .scientistEntities(researchScientistEntitySet)
             .team_count(researchProjectDto.getTeam_count())
             .domain(researchProjectDto.getDomain())
             .build();
+    if (null != project_files) {
+      Set<ProjectDocEntity> projectDocEntities =
+          ProjectDocEntity.convertTo(project_files, researchProjectEntity);
+
+      researchProjectEntity.setDocsEntityList(projectDocEntities);
+    }
 
     return researchProjectRepository.save(researchProjectEntity);
   }
@@ -107,16 +106,15 @@ public class ResearchProjectDao {
     return researchProjectRepository.findAll(researchProjectEntitySpecification);
   }
 
-
   private ResearchProjectEntity save(ResearchProjectEntity researchProjectEntity) {
     return researchProjectRepository.save(researchProjectEntity);
   }
 
   @Transactional
   @Retryable(
-          value = {DataAccessException.class},
-          maxAttempts = 3,
-          backoff = @Backoff(delay = 5000))
+      value = {DataAccessException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 5000))
   public ResearchProjectEntity update(String name, ResearchProjectDto researchProjectDto) {
 
     Optional<ResearchProjectEntity> researchProjectEntityOptional = findByName(name);
@@ -131,7 +129,7 @@ public class ResearchProjectDao {
 
       researchScientistDtos.forEach(
           researchScientistDto -> {
-          researchScientistDao.update(researchScientistDto);
+            researchScientistDao.update(researchScientistDto);
           });
       return save(researchProjectEntity);
     } else {
@@ -141,9 +139,9 @@ public class ResearchProjectDao {
 
   @Transactional
   @Retryable(
-          value = {DataAccessException.class},
-          maxAttempts = 3,
-          backoff = @Backoff(delay = 5000))
+      value = {DataAccessException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 5000))
   public void delete(String name) {
     Optional<ResearchProjectEntity> researchProjectEntityOptional = findByName(name);
     researchProjectEntityOptional.ifPresent(researchProjectRepository::delete);

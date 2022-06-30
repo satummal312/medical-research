@@ -1,21 +1,24 @@
 package com.sandeep.medicalresearch.service;
 
+import com.sandeep.medicalresearch.dao.ProjectDocDao;
 import com.sandeep.medicalresearch.dao.ResearchProjectDao;
 import com.sandeep.medicalresearch.dao.ResearchScientistDao;
 import com.sandeep.medicalresearch.dao.kafka.ResearchProjectKafkaDao;
-import com.sandeep.medicalresearch.dto.ProjectDeleteKafkaMessageDto;
-import com.sandeep.medicalresearch.dto.ResearchProjectDto;
-import com.sandeep.medicalresearch.dto.ResearchProjectFilterDto;
-import com.sandeep.medicalresearch.dto.ResearchScientistDto;
+import com.sandeep.medicalresearch.dto.*;
+import com.sandeep.medicalresearch.entity.ProjectDocEntity;
 import com.sandeep.medicalresearch.entity.ResearchProjectEntity;
 import com.sandeep.medicalresearch.entity.ResearchScientistEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Blob;
 import java.sql.SQLException;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -27,13 +30,17 @@ public class ResearchProjectService {
   private final ResearchScientistDao researchScientistDao;
   private final ResearchProjectKafkaDao researchProjectKafkaDao;
 
+  private final ProjectDocDao projectDocDao;
+
   public ResearchProjectService(
       ResearchProjectDao researchProjectDao,
       ResearchScientistDao researchScientistDao,
-      ResearchProjectKafkaDao researchProjectKafkaDao) {
+      ResearchProjectKafkaDao researchProjectKafkaDao,
+      ProjectDocDao projectDocDao) {
     this.researchProjectDao = researchProjectDao;
     this.researchScientistDao = researchScientistDao;
     this.researchProjectKafkaDao = researchProjectKafkaDao;
+    this.projectDocDao = projectDocDao;
   }
 
   public void addProject(ResearchProjectDto researchProjectDto, MultipartFile[] project_files)
@@ -83,14 +90,33 @@ public class ResearchProjectService {
     return researchProjectDtoSet;
   }
 
-  public void updateProject(String name, ResearchProjectDto researchProjectDto)
-      throws SQLException, IOException {
+  public void updateProject(String name, ResearchProjectDto researchProjectDto) {
     researchProjectDao.update(name, researchProjectDto);
   }
 
   public void deleteProject(String name) {
 
-    researchProjectKafkaDao.sendDeleteRequest(ProjectDeleteKafkaMessageDto.builder().name(name).build());
+    researchProjectKafkaDao.sendDeleteRequest(
+        ProjectDeleteKafkaMessageDto.builder().name(name).build());
     researchProjectDao.delete(name);
+  }
+
+  public List<ProjectDocDto> getDocsForThisProject(String name) throws SQLException {
+
+    List<ProjectDocDto> projectDocDtoSet = new LinkedList<>();
+    List<ProjectDocEntity> projectDocEntityList = projectDocDao.findAllByProjectName(name);
+
+    for (ProjectDocEntity projectDocEntity : projectDocEntityList) {
+      int length = (int) projectDocEntity.getProject_file().length();
+      byte[] project_file_bytes = projectDocEntity.getProject_file().getBytes(1, length);
+      projectDocDtoSet.add(
+          ProjectDocDto.builder()
+              .file_type(projectDocEntity.getFile_type())
+              .file(project_file_bytes)
+              .name(projectDocEntity.getName())
+              .build());
+    }
+
+    return projectDocDtoSet;
   }
 }

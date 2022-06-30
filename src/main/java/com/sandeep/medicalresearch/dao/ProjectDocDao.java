@@ -13,6 +13,7 @@ import javax.sql.rowset.serial.SerialBlob;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Component
@@ -25,24 +26,34 @@ public class ProjectDocDao {
     this.projectDocRepository = projectDocRepository;
   }
 
-  @Transactional
   public ProjectDocEntity save(ProjectDocDto projectDocDto) throws IOException, SQLException {
-    MultipartFile file = projectDocDto.getFile();
-    SerialBlob blob = new SerialBlob(file.getBytes());
-    ProjectDocEntity projectDocEntity =
-        ProjectDocEntity.builder().name(projectDocDto.getName()).project_file(blob).build();
-    return projectDocRepository.save(projectDocEntity);
+    SerialBlob blob = new SerialBlob(projectDocDto.getFile());
+
+        return ProjectDocEntity.builder()
+            .name(projectDocDto.getName())
+            .project_file(blob)
+            .file_type(projectDocDto.getFile_type())
+            .build();
   }
 
   public Set<ProjectDocEntity> saveAllDocs(MultipartFile[] files) throws SQLException, IOException {
 
     Set<ProjectDocEntity> projectDocEntities = new HashSet<>();
     for (MultipartFile file : files) {
-      if(file.getSize() == 0) continue;
+      if (file.getSize() == 0) continue;
       ProjectDocEntity projectDocEntity =
-          save(ProjectDocDto.builder().name(file.getOriginalFilename()).file(file).build());
+          save(
+              ProjectDocDto.builder()
+                  .name(file.getOriginalFilename())
+                  .file(file.getBytes())
+                  .file_type(file.getContentType())
+                  .build());
       projectDocEntities.add(projectDocEntity);
     }
     return projectDocEntities;
+  }
+
+  public List<ProjectDocEntity> findAllByProjectName(String name) {
+    return projectDocRepository.findAllByResearchProjectEntity_Name(name);
   }
 }

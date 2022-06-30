@@ -22,5 +22,6 @@ public class ProjectDocDto {
     @NotEmpty(message = "Project file name cannot be empty or null")
     private String name;
     @NotNull(message = "File cannot be empty or null")
-    private MultipartFile file;
+    private byte[] file;
+    private String file_type;
 }

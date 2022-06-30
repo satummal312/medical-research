@@ -1,5 +1,6 @@
 package com.sandeep.medicalresearch.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,6 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity(name = "RESEARCH_PROJECT")
@@ -69,5 +71,18 @@ public class ResearchProjectEntity {
         + ", update_time_stamp="
         + update_time_stamp
         + '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ResearchProjectEntity that = (ResearchProjectEntity) o;
+    return Objects.equals(name, that.name) && Objects.equals(funding_amount, that.funding_amount) && Objects.equals(team_count, that.team_count) && domain == that.domain;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, funding_amount, team_count, domain);
   }
 }

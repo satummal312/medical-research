@@ -1,5 +1,6 @@
 package com.sandeep.medicalresearch.controller;
 
+import com.sandeep.medicalresearch.dto.ProjectDocDto;
 import com.sandeep.medicalresearch.dto.ResearchProjectDto;
 import com.sandeep.medicalresearch.dto.ResearchProjectFilterDto;
 import com.sandeep.medicalresearch.dto.ResearchScientistDto;
@@ -8,6 +9,9 @@ import com.sandeep.medicalresearch.service.ResearchProjectService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
@@ -17,6 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -57,7 +63,7 @@ public class ResearchProjectController {
 
   @DeleteMapping("/{name}")
   @ApiOperation("Delete Research Project")
-  public ResponseEntity delete(@PathVariable String name){
+  public ResponseEntity delete(@PathVariable String name) {
     researchProjectService.deleteProject(name);
     return ResponseEntity.noContent().build();
   }
@@ -67,6 +73,22 @@ public class ResearchProjectController {
   public Set<ResearchScientistDto> getAllScientistsForThisProject(@PathVariable String name) {
     log.info("Get All scientists working on this project");
     return researchProjectService.getScientistsForThisProject(name);
+  }
+
+  @GetMapping("/{name}/doc/info")
+  public ResponseEntity<Resource> getAllDocsForThisProject(@PathVariable String name)
+      throws SQLException {
+    log.info("Get all documents for this project");
+    List<ProjectDocDto> projectDocDtoList = researchProjectService.getDocsForThisProject(name);
+
+    ProjectDocDto projectDocDto = projectDocDtoList.get(0);
+
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType(projectDocDto.getFile_type()))
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + projectDocDto.getName() + "\"")
+        .body(new ByteArrayResource(projectDocDto.getFile()));
   }
 
   @GetMapping
